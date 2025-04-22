@@ -1,4 +1,9 @@
+import 'package:findu/ui/components/default_input.dart';
 import 'package:flutter/material.dart';
+
+Widget preview() {
+  return DrawerLogin();
+}
 
 class DrawerLogin extends StatefulWidget {
   const DrawerLogin({Key? key}) : super(key: key);
@@ -7,7 +12,8 @@ class DrawerLogin extends StatefulWidget {
   State<DrawerLogin> createState() => _DrawerLoginState();
 }
 
-class _DrawerLoginState extends State<DrawerLogin> with SingleTickerProviderStateMixin {
+class _DrawerLoginState extends State<DrawerLogin>
+    with SingleTickerProviderStateMixin {
   bool _expanded = false;
   late AnimationController _controller;
   late Animation<double> _heightAnimation;
@@ -19,9 +25,10 @@ class _DrawerLoginState extends State<DrawerLogin> with SingleTickerProviderStat
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    _heightAnimation = Tween<double>(begin: 0.45, end: 0.1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _heightAnimation = Tween<double>(
+      begin: 0.45,
+      end: 0.1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
     _controller.addListener(() {
       setState(() {});
     });
@@ -47,7 +54,7 @@ class _DrawerLoginState extends State<DrawerLogin> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    
+
     return Container(
       height: size.height,
       width: size.width,
@@ -72,7 +79,7 @@ class _DrawerLoginState extends State<DrawerLogin> with SingleTickerProviderStat
               ),
             ),
           ),
-          
+
           // Parte inferior branca
           Expanded(
             child: Container(
@@ -86,18 +93,32 @@ class _DrawerLoginState extends State<DrawerLogin> with SingleTickerProviderStat
               ),
               padding: const EdgeInsets.only(bottom: 40),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  GestureDetector(
-                    onTap: _toggleExpand,
-                    child: const Text(
-                      "Não tem uma conta? Se cadastre aqui",
-                      style: TextStyle(
-                        color: Colors.blue,
-                        fontWeight: FontWeight.w500,
-                        decoration: TextDecoration.underline,
+                  const SizedBox(height: 100), 
+                  DefaultInput(
+                    hintText: 'email@exemplo.com',
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  DefaultInput(
+                    hintText: 'password',
+                    keyboardType: TextInputType.visiblePassword,
+                  ),
+                  const Spacer(),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      GestureDetector(
+                        onTap: _toggleExpand,
+                        child: const Text(
+                          "Não tem uma conta? Se cadastre aqui",
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.w500,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
