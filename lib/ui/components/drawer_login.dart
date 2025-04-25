@@ -1,5 +1,6 @@
 import 'package:findu/services/supabase_service.dart';
 import 'package:findu/ui/components/default_input.dart';
+import 'package:findu/ui/pages/signup_page.dart';
 import 'package:findu/ui/pages/success_page.dart';
 import 'package:flutter/material.dart';
 
@@ -173,7 +174,7 @@ class _DrawerLoginState extends State<DrawerLogin>
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    "Seu App de Encontros",
+                    "Encontre sua sala",
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.white,
@@ -281,7 +282,7 @@ class _DrawerLoginState extends State<DrawerLogin>
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          "Entre para conhecer pessoas novas",
+                          "Entre para encontrar sua sala",
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.grey,
@@ -347,7 +348,20 @@ class _DrawerLoginState extends State<DrawerLogin>
                         Center(
                           child: GestureDetector(
                             onTap: () {
-                              // Navegação para cadastro (a ser implementada)
+                              // Fechar o drawer
+                              if (_drawerOpen) {
+                                _toggleDrawer();
+                              }
+                              
+                              // Navegar para a página de cadastro
+                              Future.delayed(Duration(milliseconds: 300), () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SignupPage(),
+                                  ),
+                                );
+                              });
                             },
                             child: const Text(
                               "Não tem uma conta? Se cadastre aqui",

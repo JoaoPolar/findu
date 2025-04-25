@@ -13,10 +13,13 @@ class SupabaseService {
   }
 
   // Exemplo: cadastro
-  Future<AuthResponse> signUp(String email, String password) async {
+  Future<AuthResponse> signUp(String email, String password, String name) async {
     final response = await _client.auth.signUp(
       email: email,
       password: password,
+      data: {
+        'name': name,
+      },
     );
     return response;
   }
