@@ -2,6 +2,8 @@ import 'package:findu/services/supabase_service.dart';
 import 'package:findu/ui/components/default_input.dart';
 import 'package:findu/ui/pages/signup_page.dart';
 import 'package:findu/ui/pages/success_page.dart';
+import 'package:findu/ui/utils/hero_tags.dart';
+import 'package:findu/ui/utils/page_transition.dart';
 import 'package:flutter/material.dart';
 
 Widget preview() {
@@ -147,29 +149,38 @@ class _DrawerLoginState extends State<DrawerLogin>
                 children: [
                   const Spacer(flex: 1),
                   // Área para logo
-                  Container(
-                    width: size.width * 0.35,
-                    height: size.width * 0.35,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.person_outline,
-                        size: 70,
-                        color: Colors.white,
+                  Hero(
+                    tag: HeroTags.logo,
+                    child: Container(
+                      width: size.width * 0.35,
+                      height: size.width * 0.35,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.person_outline,
+                          size: 70,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 30),
                   // Título
-                  const Text(
-                    "FindU",
-                    style: TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  Hero(
+                    tag: HeroTags.title,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: const Text(
+                        "FindU",
+                        style: TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -182,36 +193,42 @@ class _DrawerLoginState extends State<DrawerLogin>
                   ),
                   const Spacer(flex: 1),
                   // Botão entrar principal
-                  Container(
-                    width: size.width * 0.6,
-                    height: 48,
-                    margin: const EdgeInsets.only(bottom: 40),
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          spreadRadius: 0,
-                          blurRadius: 6,
-                          offset: const Offset(0, 3),
+                  Hero(
+                    tag: HeroTags.mainButton,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: Container(
+                        width: size.width * 0.6,
+                        height: 48,
+                        margin: const EdgeInsets.only(bottom: 40),
+                        decoration: BoxDecoration(
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              spreadRadius: 0,
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: ElevatedButton(
-                      onPressed: _toggleDrawer,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: const Color(0xFF009688),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                      ),
-                      child: const Text(
-                        'ENTRAR',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
+                        child: ElevatedButton(
+                          onPressed: _toggleDrawer,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFF009688),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                          ),
+                          child: const Text(
+                            'ENTRAR',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -307,36 +324,42 @@ class _DrawerLoginState extends State<DrawerLogin>
                         
                         // Botão de login no formulário
                         Center(
-                          child: Container(
-                            width: size.width * 0.6,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  spreadRadius: 0,
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
+                          child: Hero(
+                            tag: HeroTags.mainButton + "_form",
+                            child: Material(
+                              color: Colors.transparent,
+                              child: Container(
+                                width: size.width * 0.6,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      spreadRadius: 0,
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            child: ElevatedButton(
-                              onPressed: _realizarLogin,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF009688),
-                                elevation: 0,
-                                padding: EdgeInsets.zero,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ),
-                              child: const Text(
-                                'ENTRAR',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.2,
-                                  color: Colors.white,
+                                child: ElevatedButton(
+                                  onPressed: _realizarLogin,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF009688),
+                                    elevation: 0,
+                                    padding: EdgeInsets.zero,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'ENTRAR',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 1.2,
+                                      color: Colors.white,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -346,29 +369,37 @@ class _DrawerLoginState extends State<DrawerLogin>
                         const SizedBox(height: 20),
                         // Link para cadastro
                         Center(
-                          child: GestureDetector(
-                            onTap: () {
-                              // Fechar o drawer
-                              if (_drawerOpen) {
-                                _toggleDrawer();
-                              }
-                              
-                              // Navegar para a página de cadastro
-                              Future.delayed(Duration(milliseconds: 300), () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const SignupPage(),
+                          child: Hero(
+                            tag: HeroTags.toggleButton,
+                            child: Material(
+                              color: Colors.transparent,
+                              child: GestureDetector(
+                                onTap: () {
+                                  // Fechar o drawer
+                                  if (_drawerOpen) {
+                                    _toggleDrawer();
+                                  }
+                                  
+                                  // Navegar para a página de cadastro com transição suave
+                                  Future.delayed(Duration(milliseconds: 300), () {
+                                    Navigator.push(
+                                      context,
+                                      CustomPageTransition(
+                                        page: const SignupPage(),
+                                        transitionType: TransitionType.slideUp,
+                                        duration: const Duration(milliseconds: 400),
+                                      ),
+                                    );
+                                  });
+                                },
+                                child: const Text(
+                                  "Não tem uma conta? Se cadastre aqui",
+                                  style: TextStyle(
+                                    color: Colors.blue,
+                                    fontWeight: FontWeight.w500,
+                                    decoration: TextDecoration.underline,
                                   ),
-                                );
-                              });
-                            },
-                            child: const Text(
-                              "Não tem uma conta? Se cadastre aqui",
-                              style: TextStyle(
-                                color: Colors.blue,
-                                fontWeight: FontWeight.w500,
-                                decoration: TextDecoration.underline,
+                                ),
                               ),
                             ),
                           ),
