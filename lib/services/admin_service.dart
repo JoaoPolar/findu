@@ -8,38 +8,14 @@ class AdminService {
   final _supabaseService = SupabaseService();
 
   // CRUD para Estudantes
-  Future<List<Student>> getStudents({
-    String? courseFilter,
-    int? semesterFilter,
-    String? shiftFilter,
-  }) async {
+  Future<List<Student>> getStudents() async {
     try {
-      var query = _supabaseService.client.from('students').select();
+      final response = await _supabaseService.client
+          .from('students')
+          .select()
+          .order('name');
 
-      if (courseFilter != null) {
-        query = query.eq('course', courseFilter);
-      }
-      if (semesterFilter != null) {
-        query = query.eq('semester', semesterFilter);
-      }
-      if (shiftFilter != null) {
-        query = query.eq('shift', shiftFilter);
-      }
-
-      final response = await query;
-      return (response as List).map((json) {
-        // Converter para o formato esperado pelo modelo
-        final convertedJson = {
-          'id': json['id'],
-          'name': json['name'],
-          'email': json['email'],
-          'course': json['course'],
-          'semester': json['semester'],
-          'shift': json['shift'],
-          'enrolledClasses': json['enrolled_classes'] ?? [],
-        };
-        return Student.fromJson(convertedJson);
-      }).toList();
+      return response.map<Student>((json) => Student.fromJson(json)).toList();
     } catch (e) {
       print('Erro ao buscar estudantes: $e');
       return [];
@@ -48,32 +24,13 @@ class AdminService {
 
   Future<Student?> createStudent(Student student) async {
     try {
-      final data = {
-        'name': student.name,
-        'email': student.email,
-        'course': student.course,
-        'semester': student.semester,
-        'shift': student.shift,
-        'enrolled_classes': student.enrolledClasses,
-      };
-
       final response = await _supabaseService.client
           .from('students')
-          .insert(data)
+          .insert(student.toJson(forDatabase: false))
           .select()
           .single();
 
-      final convertedJson = {
-        'id': response['id'],
-        'name': response['name'],
-        'email': response['email'],
-        'course': response['course'],
-        'semester': response['semester'],
-        'shift': response['shift'],
-        'enrolledClasses': response['enrolled_classes'] ?? [],
-      };
-
-      return Student.fromJson(convertedJson);
+      return Student.fromJson(response);
     } catch (e) {
       print('Erro ao criar estudante: $e');
       return null;
@@ -82,34 +39,14 @@ class AdminService {
 
   Future<Student?> updateStudent(Student student) async {
     try {
-      final data = {
-        'name': student.name,
-        'email': student.email,
-        'course': student.course,
-        'semester': student.semester,
-        'shift': student.shift,
-        'enrolled_classes': student.enrolledClasses,
-        'updated_at': DateTime.now().toIso8601String(),
-      };
-
       final response = await _supabaseService.client
           .from('students')
-          .update(data)
+          .update(student.toJson())
           .eq('id', student.id)
           .select()
           .single();
 
-      final convertedJson = {
-        'id': response['id'],
-        'name': response['name'],
-        'email': response['email'],
-        'course': response['course'],
-        'semester': response['semester'],
-        'shift': response['shift'],
-        'enrolledClasses': response['enrolled_classes'] ?? [],
-      };
-
-      return Student.fromJson(convertedJson);
+      return Student.fromJson(response);
     } catch (e) {
       print('Erro ao atualizar estudante: $e');
       return null;
@@ -149,22 +86,22 @@ class AdminService {
     }
   }
 
-  Future<Room?> createRoom(Room room) async {
+  Future<Room> createRoom(Room room) async {
     try {
       final response = await _supabaseService.client
           .from('rooms')
-          .insert(room.toJson())
+          .insert(room.toJson(forDatabase: false))
           .select()
           .single();
 
       return Room.fromJson(response);
     } catch (e) {
       print('Erro ao criar sala: $e');
-      return null;
+      throw Exception('Erro ao criar sala: $e');
     }
   }
 
-  Future<Room?> updateRoom(Room room) async {
+  Future<Room> updateRoom(Room room) async {
     try {
       final data = room.toJson();
       data['updated_at'] = DateTime.now().toIso8601String();
@@ -179,20 +116,19 @@ class AdminService {
       return Room.fromJson(response);
     } catch (e) {
       print('Erro ao atualizar sala: $e');
-      return null;
+      throw Exception('Erro ao atualizar sala: $e');
     }
   }
 
-  Future<bool> deleteRoom(String roomId) async {
+  Future<void> deleteRoom(String roomId) async {
     try {
       await _supabaseService.client
           .from('rooms')
           .delete()
           .eq('id', roomId);
-      return true;
     } catch (e) {
       print('Erro ao deletar sala: $e');
-      return false;
+      throw Exception('Erro ao deletar sala: $e');
     }
   }
 
@@ -215,7 +151,7 @@ class AdminService {
     try {
       final response = await _supabaseService.client
           .from('courses')
-          .insert(course.toJson())
+          .insert(course.toJson(forDatabase: false))
           .select()
           .single();
 
@@ -261,28 +197,7 @@ class AdminService {
       }
 
       final response = await query;
-      return (response as List).map((json) {
-        // Converter do formato do banco para o formato do modelo
-        final convertedJson = {
-          'id': json['id'],
-          'className': json['class_name'],
-          'teacherName': json['teacher_name'],
-          'room': json['room'],
-          'building': json['building'],
-          'day': _convertDayFromDb(json['day']),
-          'startTime': {
-            'hour': json['start_time_hour'],
-            'minute': json['start_time_minute'],
-          },
-          'endTime': {
-            'hour': json['end_time_hour'],
-            'minute': json['end_time_minute'],
-          },
-          'courseId': json['course_id'],
-          'semester': json['semester'],
-        };
-        return ClassSchedule.fromJson(convertedJson);
-      }).toList();
+      return (response as List).map((json) => ClassSchedule.fromJson(json)).toList();
     } catch (e) {
       print('Erro ao buscar horários: $e');
       return [];
@@ -291,19 +206,7 @@ class AdminService {
 
   Future<ClassSchedule?> createSchedule(ClassSchedule schedule) async {
     try {
-      final data = {
-        'class_name': schedule.className,
-        'teacher_name': schedule.teacherName,
-        'room': schedule.room,
-        'building': schedule.building,
-        'day': _convertDayToDb(schedule.day),
-        'start_time_hour': schedule.startTime.hour,
-        'start_time_minute': schedule.startTime.minute,
-        'end_time_hour': schedule.endTime.hour,
-        'end_time_minute': schedule.endTime.minute,
-        'course_id': schedule.courseId,
-        'semester': schedule.semester,
-      };
+      final data = schedule.toDatabaseJson();
 
       final response = await _supabaseService.client
           .from('class_schedules')
@@ -311,26 +214,7 @@ class AdminService {
           .select()
           .single();
 
-      final convertedJson = {
-        'id': response['id'],
-        'className': response['class_name'],
-        'teacherName': response['teacher_name'],
-        'room': response['room'],
-        'building': response['building'],
-        'day': _convertDayFromDb(response['day']),
-        'startTime': {
-          'hour': response['start_time_hour'],
-          'minute': response['start_time_minute'],
-        },
-        'endTime': {
-          'hour': response['end_time_hour'],
-          'minute': response['end_time_minute'],
-        },
-        'courseId': response['course_id'],
-        'semester': response['semester'],
-      };
-
-      return ClassSchedule.fromJson(convertedJson);
+      return ClassSchedule.fromJson(response);
     } catch (e) {
       print('Erro ao criar horário: $e');
       return null;
@@ -339,20 +223,8 @@ class AdminService {
 
   Future<ClassSchedule?> updateSchedule(ClassSchedule schedule) async {
     try {
-      final data = {
-        'class_name': schedule.className,
-        'teacher_name': schedule.teacherName,
-        'room': schedule.room,
-        'building': schedule.building,
-        'day': _convertDayToDb(schedule.day),
-        'start_time_hour': schedule.startTime.hour,
-        'start_time_minute': schedule.startTime.minute,
-        'end_time_hour': schedule.endTime.hour,
-        'end_time_minute': schedule.endTime.minute,
-        'course_id': schedule.courseId,
-        'semester': schedule.semester,
-        'updated_at': DateTime.now().toIso8601String(),
-      };
+      final data = schedule.toDatabaseJson();
+      data['updated_at'] = DateTime.now().toIso8601String();
 
       final response = await _supabaseService.client
           .from('class_schedules')
@@ -361,26 +233,7 @@ class AdminService {
           .select()
           .single();
 
-      final convertedJson = {
-        'id': response['id'],
-        'className': response['class_name'],
-        'teacherName': response['teacher_name'],
-        'room': response['room'],
-        'building': response['building'],
-        'day': _convertDayFromDb(response['day']),
-        'startTime': {
-          'hour': response['start_time_hour'],
-          'minute': response['start_time_minute'],
-        },
-        'endTime': {
-          'hour': response['end_time_hour'],
-          'minute': response['end_time_minute'],
-        },
-        'courseId': response['course_id'],
-        'semester': response['semester'],
-      };
-
-      return ClassSchedule.fromJson(convertedJson);
+      return ClassSchedule.fromJson(response);
     } catch (e) {
       print('Erro ao atualizar horário: $e');
       return null;
@@ -400,46 +253,19 @@ class AdminService {
     }
   }
 
-  // Funções auxiliares para conversão de dias
-  String _convertDayToDb(Day day) {
-    return day.toString().split('.').last;
-  }
-
-  Day _convertDayFromDb(String dayStr) {
-    switch (dayStr.toLowerCase()) {
-      case 'monday':
-        return Day.monday;
-      case 'tuesday':
-        return Day.tuesday;
-      case 'wednesday':
-        return Day.wednesday;
-      case 'thursday':
-        return Day.thursday;
-      case 'friday':
-        return Day.friday;
-      case 'saturday':
-        return Day.saturday;
-      case 'sunday':
-        return Day.sunday;
-      default:
-        return Day.monday;
-    }
-  }
-
   // Relatórios e estatísticas
-  Future<Map<String, int>> getStudentStatistics() async {
+  Future<Map<String, int>> getStudentStatsByCourse() async {
     try {
       final students = await getStudents();
       final Map<String, int> stats = {};
-
-      // Estatísticas por curso
+      
       for (final student in students) {
-        stats[student.course] = (stats[student.course] ?? 0) + 1;
+        stats[student.courseId] = (stats[student.courseId] ?? 0) + 1;
       }
-
+      
       return stats;
     } catch (e) {
-      print('Erro ao gerar estatísticas: $e');
+      print('Erro ao buscar estatísticas de estudantes: $e');
       return {};
     }
   }
@@ -450,11 +276,11 @@ class AdminService {
       final schedules = await getSchedules();
       
       return rooms.map((room) {
-        final roomSchedules = schedules.where((s) => s.room == room.number).length;
+        final roomSchedules = schedules.where((s) => s.roomId == room.id).length;
         return {
           'room': room,
           'occupancy': roomSchedules,
-          'utilization': (roomSchedules / 35 * 100).round(), // 35 = 7 dias * 5 horários por dia
+          'utilization': (roomSchedules / 36 * 100).round(), // 36 = 6 dias * 6 horários por dia
         };
       }).toList();
     } catch (e) {

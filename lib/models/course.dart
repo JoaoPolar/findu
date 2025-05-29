@@ -1,3 +1,5 @@
+import 'package:uuid/uuid.dart';
+
 class Course {
   final String id;
   final String name;
@@ -10,45 +12,52 @@ class Course {
   final DateTime? updatedAt;
 
   Course({
-    required this.id,
+    String? id,
     required this.name,
     required this.code,
     required this.totalSemesters,
     required this.shift,
     required this.coordinator,
     this.isActive = true,
-    required this.createdAt,
+    DateTime? createdAt,
     this.updatedAt,
-  });
+  }) : id = id ?? const Uuid().v4(),
+       createdAt = createdAt ?? DateTime.now();
 
   factory Course.fromJson(Map<String, dynamic> json) {
     return Course(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      code: json['code'] as String,
-      totalSemesters: json['total_semesters'] as int,
-      shift: json['shift'] as String,
-      coordinator: json['coordinator'] as String,
-      isActive: json['is_active'] as bool? ?? true,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      id: json['id'],
+      name: json['name'],
+      code: json['code'],
+      totalSemesters: json['total_semesters'] ?? json['totalSemesters'] ?? 8,
+      shift: json['shift'],
+      coordinator: json['coordinator'],
+      isActive: json['is_active'] ?? json['isActive'] ?? true,
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at']) 
+          : DateTime.now(),
       updatedAt: json['updated_at'] != null 
-          ? DateTime.parse(json['updated_at'] as String) 
+          ? DateTime.parse(json['updated_at']) 
           : null,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
+  Map<String, dynamic> toJson({bool forDatabase = false}) {
+    final data = <String, dynamic>{
       'name': name,
       'code': code,
       'total_semesters': totalSemesters,
       'shift': shift,
       'coordinator': coordinator,
       'is_active': isActive,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String(),
     };
+
+    // Só incluir o ID se não for para criação no banco
+    if (forDatabase && id.isNotEmpty) {
+      data['id'] = id;
+    }
+
+    return data;
   }
 
   String get shiftDisplayName {
@@ -64,5 +73,29 @@ class Course {
       default:
         return shift;
     }
+  }
+
+  Course copyWith({
+    String? id,
+    String? name,
+    String? code,
+    int? totalSemesters,
+    String? shift,
+    String? coordinator,
+    bool? isActive,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Course(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      code: code ?? this.code,
+      totalSemesters: totalSemesters ?? this.totalSemesters,
+      shift: shift ?? this.shift,
+      coordinator: coordinator ?? this.coordinator,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
   }
 } 

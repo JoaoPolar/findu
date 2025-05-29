@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/admin_service.dart';
 import '../../models/student.dart';
+import '../../models/course.dart';
 
 class StudentsPage extends StatefulWidget {
   const StudentsPage({Key? key}) : super(key: key);
@@ -13,14 +14,15 @@ class _StudentsPageState extends State<StudentsPage> {
   final _adminService = AdminService();
   List<Student> _students = [];
   List<Student> _filteredStudents = [];
-  bool _isLoading = true;
+  List<Course> _courses = [];
+  bool _isLoading = false;
   
   String _searchQuery = '';
   String? _selectedCourse;
   int? _selectedSemester;
   String? _selectedShift;
 
-  final List<String> _courses = [
+  final List<String> _coursesList = [
     'ENG_CIVIL',
     'ENG_COMP', 
     'SIS_INFO',
@@ -40,19 +42,21 @@ class _StudentsPageState extends State<StudentsPage> {
   @override
   void initState() {
     super.initState();
-    _loadStudents();
+    _loadData();
   }
 
-  Future<void> _loadStudents() async {
+  Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
     });
 
     try {
       final students = await _adminService.getStudents();
+      final courses = await _adminService.getCourses();
       setState(() {
         _students = students;
         _filteredStudents = students;
+        _courses = courses;
         _isLoading = false;
       });
     } catch (e) {
@@ -62,7 +66,7 @@ class _StudentsPageState extends State<StudentsPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erro ao carregar estudantes: $e'),
+            content: Text('Erro ao carregar dados: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -75,7 +79,7 @@ class _StudentsPageState extends State<StudentsPage> {
       _filteredStudents = _students.where((student) {
         final matchesSearch = student.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
                             student.email.toLowerCase().contains(_searchQuery.toLowerCase());
-        final matchesCourse = _selectedCourse == null || student.course == _selectedCourse;
+        final matchesCourse = _selectedCourse == null || student.courseId == _selectedCourse;
         final matchesSemester = _selectedSemester == null || student.semester == _selectedSemester;
         final matchesShift = _selectedShift == null || student.shift == _selectedShift;
         
@@ -88,10 +92,9 @@ class _StudentsPageState extends State<StudentsPage> {
     final isEditing = student != null;
     final nameController = TextEditingController(text: student?.name ?? '');
     final emailController = TextEditingController(text: student?.email ?? '');
-    String selectedCourse = student?.course ?? _courses.first;
+    String selectedCourse = student?.courseId ?? (_courses.isNotEmpty ? _courses.first.id : '');
     int selectedSemester = student?.semester ?? 1;
-    String selectedShift = student?.shift ?? _shifts.first;
-    List<String> enrolledClasses = List.from(student?.enrolledClasses ?? []);
+    String selectedShift = student?.shift ?? 'morning';
 
     showDialog(
       context: context,
@@ -126,8 +129,8 @@ class _StudentsPageState extends State<StudentsPage> {
                     border: OutlineInputBorder(),
                   ),
                   items: _courses.map((course) => DropdownMenuItem(
-                    value: course,
-                    child: Text(_getCourseDisplayName(course)),
+                    value: course.id,
+                    child: Text(course.name),
                   )).toList(),
                   onChanged: (value) {
                     setDialogState(() {
@@ -160,10 +163,12 @@ class _StudentsPageState extends State<StudentsPage> {
                     labelText: 'Turno',
                     border: OutlineInputBorder(),
                   ),
-                  items: _shifts.map((shift) => DropdownMenuItem(
-                    value: shift,
-                    child: Text(shift),
-                  )).toList(),
+                  items: const [
+                    DropdownMenuItem(value: 'morning', child: Text('Matutino')),
+                    DropdownMenuItem(value: 'afternoon', child: Text('Vespertino')),
+                    DropdownMenuItem(value: 'evening', child: Text('Noturno')),
+                    DropdownMenuItem(value: 'full', child: Text('Integral')),
+                  ],
                   onChanged: (value) {
                     setDialogState(() {
                       selectedShift = value!;
@@ -180,7 +185,8 @@ class _StudentsPageState extends State<StudentsPage> {
             ),
             ElevatedButton(
               onPressed: () async {
-                if (nameController.text.isEmpty || emailController.text.isEmpty) {
+                if (nameController.text.isEmpty || 
+                    emailController.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Preencha todos os campos obrigatórios'),
@@ -191,13 +197,12 @@ class _StudentsPageState extends State<StudentsPage> {
                 }
 
                 final newStudent = Student(
-                  id: student?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+                  id: student?.id,
                   name: nameController.text,
                   email: emailController.text,
-                  course: selectedCourse,
+                  courseId: selectedCourse,
                   semester: selectedSemester,
                   shift: selectedShift,
-                  enrolledClasses: enrolledClasses,
                 );
 
                 try {
@@ -208,7 +213,7 @@ class _StudentsPageState extends State<StudentsPage> {
                   }
                   
                   Navigator.pop(context);
-                  _loadStudents();
+                  _loadData();
                   
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -249,7 +254,7 @@ class _StudentsPageState extends State<StudentsPage> {
               try {
                 await _adminService.deleteStudent(student.id);
                 Navigator.pop(context);
-                _loadStudents();
+                _loadData();
                 
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -275,16 +280,17 @@ class _StudentsPageState extends State<StudentsPage> {
   }
 
   String _getCourseDisplayName(String courseId) {
-    switch (courseId) {
-      case 'ENG_CIVIL': return 'Engenharia Civil';
-      case 'ENG_COMP': return 'Engenharia da Computação';
-      case 'SIS_INFO': return 'Sistemas de Informação';
-      case 'DIREITO': return 'Direito';
-      case 'PSICO': return 'Psicologia';
-      case 'MED': return 'Medicina';
-      case 'ENF': return 'Enfermagem';
-      default: return courseId;
-    }
+    final course = _courses.firstWhere(
+      (c) => c.id == courseId,
+      orElse: () => Course(
+        name: 'Curso não encontrado',
+        code: '',
+        totalSemesters: 8,
+        shift: 'morning',
+        coordinator: '',
+      ),
+    );
+    return course.name;
   }
 
   @override
@@ -295,7 +301,7 @@ class _StudentsPageState extends State<StudentsPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadStudents,
+            onPressed: _loadData,
           ),
         ],
       ),
@@ -331,8 +337,8 @@ class _StudentsPageState extends State<StudentsPage> {
                         items: [
                           const DropdownMenuItem(value: null, child: Text('Todos os cursos')),
                           ..._courses.map((course) => DropdownMenuItem(
-                            value: course,
-                            child: Text(_getCourseDisplayName(course)),
+                            value: course.id,
+                            child: Text(_getCourseDisplayName(course.id)),
                           )),
                         ],
                         onChanged: (value) {
@@ -399,7 +405,7 @@ class _StudentsPageState extends State<StudentsPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(student.email),
-                                  Text('${_getCourseDisplayName(student.course)} - ${student.semester}º Semestre'),
+                                  Text('${_getCourseDisplayName(student.courseId)} - ${student.semester}º Semestre'),
                                   Text('Turno: ${student.shift}'),
                                 ],
                               ),

@@ -50,22 +50,26 @@ class _RoomsPageState extends State<RoomsPage> {
   }
 
   Future<void> _loadRooms() async {
+    if (!mounted) return;
+    
     setState(() {
       _isLoading = true;
     });
 
     try {
       final rooms = await _adminService.getRooms();
-      setState(() {
-        _rooms = rooms;
-        _filteredRooms = rooms;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
       if (mounted) {
+        setState(() {
+          _rooms = rooms;
+          _filteredRooms = rooms;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro ao carregar salas: $e'),
@@ -77,6 +81,8 @@ class _RoomsPageState extends State<RoomsPage> {
   }
 
   void _filterRooms() {
+    if (!mounted) return;
+    
     setState(() {
       _filteredRooms = _rooms.where((room) {
         final matchesSearch = room.number.toLowerCase().contains(_searchQuery.toLowerCase()) ||
@@ -87,6 +93,14 @@ class _RoomsPageState extends State<RoomsPage> {
         return matchesSearch && matchesBuilding && matchesType;
       }).toList();
     });
+  }
+
+  bool _roomExists(String number, String building, {String? excludeId}) {
+    return _rooms.any((room) => 
+      room.number.toLowerCase() == number.toLowerCase() && 
+      room.building.toLowerCase() == building.toLowerCase() &&
+      room.id != excludeId
+    );
   }
 
   void _showRoomDialog({Room? room}) {
@@ -111,6 +125,7 @@ class _RoomsPageState extends State<RoomsPage> {
                   decoration: const InputDecoration(
                     labelText: 'Número da Sala',
                     border: OutlineInputBorder(),
+                    hintText: 'Ex: 101, Lab1, Auditório',
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -136,6 +151,7 @@ class _RoomsPageState extends State<RoomsPage> {
                   decoration: const InputDecoration(
                     labelText: 'Capacidade',
                     border: OutlineInputBorder(),
+                    hintText: 'Número de pessoas',
                   ),
                   keyboardType: TextInputType.number,
                 ),
@@ -202,7 +218,18 @@ class _RoomsPageState extends State<RoomsPage> {
                 if (capacity == null || capacity <= 0) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Capacidade deve ser um número válido'),
+                      content: Text('Capacidade deve ser um número válido maior que zero'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
+                // Verificar se já existe uma sala com o mesmo número e prédio
+                if (_roomExists(numberController.text, selectedBuilding, excludeId: room?.id)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Já existe uma sala com este número neste prédio'),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -210,8 +237,8 @@ class _RoomsPageState extends State<RoomsPage> {
                 }
 
                 final newRoom = Room(
-                  id: room?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-                  number: numberController.text,
+                  id: room?.id,
+                  number: numberController.text.trim(),
                   building: selectedBuilding,
                   capacity: capacity,
                   type: selectedType,
@@ -228,21 +255,32 @@ class _RoomsPageState extends State<RoomsPage> {
                   }
                   
                   Navigator.pop(context);
-                  _loadRooms();
+                  await _loadRooms();
                   
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(isEditing ? 'Sala atualizada!' : 'Sala criada!'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(isEditing ? 'Sala atualizada com sucesso!' : 'Sala criada com sucesso!'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Erro ao salvar: $e'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
+                  String errorMessage = 'Erro ao salvar sala';
+                  if (e.toString().contains('duplicate key')) {
+                    errorMessage = 'Já existe uma sala com este número neste prédio';
+                  } else if (e.toString().contains('violates unique constraint')) {
+                    errorMessage = 'Dados duplicados não são permitidos';
+                  }
+                  
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(errorMessage),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 }
               },
               child: Text(isEditing ? 'Atualizar' : 'Criar'),
@@ -258,7 +296,7 @@ class _RoomsPageState extends State<RoomsPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Confirmar Exclusão'),
-        content: Text('Tem certeza que deseja excluir a sala ${room.number}?'),
+        content: Text('Tem certeza que deseja excluir a sala ${room.number} do ${room.building}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -269,21 +307,25 @@ class _RoomsPageState extends State<RoomsPage> {
               try {
                 await _adminService.deleteRoom(room.id);
                 Navigator.pop(context);
-                _loadRooms();
+                await _loadRooms();
                 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Sala excluída!'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Sala excluída com sucesso!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Erro ao excluir: $e'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Erro ao excluir sala: ${e.toString().replaceAll('Exception: ', '')}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
